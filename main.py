@@ -2,7 +2,7 @@
 """
 Module Docstring
 """
-import openpyxl
+
 
 __author__ = "Danny Choi"
 __version__ = "0.1.0"
@@ -16,4 +16,4 @@ def main():
 
 if __name__ == "__main__":
     """ This is executed when run from the command line """
-    main()git remote add origin https://github.com/choi0/talkingdata.git
+    main()
