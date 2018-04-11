@@ -1,3 +1,5 @@
 .idea
 .DS_Store
 talkingdata.iml
+.vs
+__pycache__

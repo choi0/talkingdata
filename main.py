@@ -52,7 +52,7 @@ def main():
     dataPointsNonAtt = df[(df.is_attributed==0)]
     trace_comp0 = go.Scatter(
         x=dataPointsAtt.click_time,
-        y=dataPointsAtt.os,
+        y=dataPointsAtt.channel,
         mode='markers',
         marker=dict(size=12,
                     line=dict(width=1),
@@ -64,7 +64,7 @@ def main():
 
     trace_comp1 = go.Scatter(
         x=dataPointsNonAtt.click_time,
-        y=dataPointsNonAtt.os,
+        y=dataPointsNonAtt.channel,
         mode='markers',
         marker=dict(size=12,
                     line=dict(width=1),
@@ -76,7 +76,7 @@ def main():
 
     data_comp = [trace_comp0, trace_comp1]
     layout_comp = go.Layout(
-        title='OS vs Time',
+        title='Channel vs Time',
         hovermode='closest',
         xaxis=dict(
             title='Time',
@@ -85,13 +85,13 @@ def main():
             gridwidth=2,
         ),
         yaxis=dict(
-            title='OS',
+            title='Channel',
             ticklen=5,
             gridwidth=2,
         ),
     )
     fig_comp = go.Figure(data=data_comp, layout=layout_comp)
-    py.iplot(fig_comp, filename='OS vs Time')
+    py.iplot(fig_comp, filename='Channel vs Time')
 
     # Plot and embed in ipython notebook!
     #py.iplot(data, filename='basic-scatter')
