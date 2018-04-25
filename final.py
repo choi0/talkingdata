@@ -12,9 +12,11 @@ import graphviz
 from keras.models import Sequential
 #from keras.utils import plot_model
 from keras.layers import Dense
-from keras.wrappers.scikit_learn import KerasClassifier
+from keras.wrappers.scikit_learn import KerasClassifier, KerasRegressor
+from keras.activations import relu, sigmoid, tanh
 import keras.backend as K
-from sklearn.metrics import confusion_matrix,accuracy_score, roc_curve, auc
+from sklearn.metrics import confusion_matrix,accuracy_score, roc_curve, auc, roc_auc_score
+from sklearn.model_selection import GridSearchCV
 
 
 __author__ = "Danny Choi"
@@ -23,23 +25,6 @@ __license__ = "MIT"
 
 def mean_pred(y_true, y_pred):
     return K.mean(y_pred)
-
-def auc_roc(y_true, y_pred):
-    # any tensorflow metric
-    value, update_op = tf.contrib.metrics.streaming_auc(y_pred, y_true)
-
-    # find all variables created for this metric
-    metric_vars = [i for i in tf.local_variables() if 'auc_roc' in i.name.split('/')[1]]
-
-    # Add metric variables to GLOBAL_VARIABLES collection.
-    # They will be initialized for new session.
-    for v in metric_vars:
-        tf.add_to_collection(tf.GraphKeys.GLOBAL_VARIABLES, v)
-
-    # force to update metric values
-    with tf.control_dependencies([update_op]):
-        value = tf.identity(value)
-        return value
 
 def preprocessTraining(df):
     #preprocess data
@@ -64,6 +49,19 @@ def preprocessTest(df):
     df['time_sec']   = df.click_time.str[17:20]
     x_data = df.drop(['click_id', 'ip', 'click_time'], axis = 1).values
     return (x_data)
+
+def create_model(layers, activation):
+    model = Sequential()
+    for i, nodes in enumerate(layers):
+        if i == 0:
+            model.add(Dense(nodes, input_dim=9, activation=activation))
+            #model.add(activation(activation))
+        else:
+            model.add(Dense(nodes, activation=activation))
+            #model.add(activation(activation))
+    model.add(Dense(1))
+    model.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
+    return model
 
 def main():
     """ Main entry point of the app """
@@ -110,16 +108,28 @@ def main():
     #print(submission.head())
 
     # create model
-    model = Sequential()
-    model.add(Dense(6, input_dim=9, kernel_initializer='normal', activation='relu'))
-    model.add(Dense(3, kernel_initializer='normal', activation='relu'))
-    model.add(Dense(1, kernel_initializer='normal', activation='tanh'))
+    #model = Sequential()
+    #model.add(Dense(6, input_dim=9, kernel_initializer='normal', activation='relu'))
+    #model.add(Dense(3, kernel_initializer='normal', activation='relu'))
+    #model.add(Dense(1, kernel_initializer='normal', activation='tanh'))
     # Compile model
-    model.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
-    model.fit(x_train, y_train, epochs=8, batch_size=128)
+    #model.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy', 'sparse_categorical_accuracy'])
+    #model.fit(x_train, y_train, epochs=8, batch_size=64)
+    
+    model = KerasRegressor(build_fn = create_model)
+    layers = [[5], [6,3], [6,5,4,3]]
+    activations = [relu, sigmoid]
+    param_grid = dict(layers = layers, activation = activations, batch_size = [32, 64], epochs = [4])
+    grid = GridSearchCV(estimator = model, param_grid = param_grid, scoring = 'neg_mean_squared_error')
+
+    grid_result = grid.fit(x_train, y_train)
+    print(grid_result.best_score_)
+    print(grid_result.best_params_)
+    #[grid_result.best_score_, grid_result.best_params_]
+
+    model.fit(x_train, y_train)
     results = model.predict(x_train)
     results = np.where(results > 0.5, 1, 0)
-    #plot_model(model, to_file='model.png')
 
     negCount = 0
     posCount = 0
